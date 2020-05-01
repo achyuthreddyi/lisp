@@ -7,7 +7,7 @@ let globalEnv = {
   '*' :  (args) => args.reduce((a,b) => a*b),
   '/': (args) => args.reduce((a,b) => a/b),
   '>': (args)=> args[0]>args[1] ?  true : false,
-  '<':(a,b) => Math.min(a,b),
+  '<':(args)=> args[0]<args[1] ?  true : false,
   'sqrt':a=>  Math.sqrt(a)
                         
 }
@@ -46,6 +46,67 @@ function quote_parser(input){
 
 }
 
+function lambda_parser(input){
+  console.log('coming inside lambda_praser',input);
+  
+  let parameter
+  let  args = {}
+  let local_environment = {}
+  if (input.startsWith('lambda ')) return null
+  input = skipSpace(input.slice(7))
+  console.log('input.slice(7',input);
+  
+  input = skipSpace(input.slice(1))
+  while(!input.startsWith(')')){
+    parameter = defining_variable(input)
+    if (!parameter) return null
+    args[parameter[0]] = null
+    input = skipSpace(parameter[1])
+    console.log('paranater',parameter);
+    
+  }
+  console.log('input');
+  // need to create a structure that holds the symbol and store it in thelocal environent
+  local_environment.args = args
+  //create a function to validate the left part of the inpt that should verify as a function
+  let result = validate_fun(input)
+  if (!result) return null
+  local_environment.func = result[0]
+  input = skipSpace(result[1])
+  if (!input.startsWith(')'))  return null
+  console.log(env);
+  console.log('local_env',local_environment);
+  
+  
+  return [local_environment,input.slice(1)]
+
+}
+
+function validate_fun(input){
+  let result 
+  if((result = numberparser(skipSpace(input)))) return result
+  else if ((result = defining_variable(skipSpace(input)))) return result
+  input = skipSpace(input)
+  if (input.startsWith('(')){
+    input = skipSpace(input.slice(1))
+    result ='('
+    let c = 1
+    while(c){
+      if (input.startsWith('(')) c +=1
+      if (input.startsWith(')')) c -=1
+      if(!c) break
+      result += input[0]
+      input = input.slice(1)
+
+    } 
+    result += ')'
+    return[result,skipSpace(input.slice(1))]   
+
+  }
+  return null
+
+}
+
 
 
 
@@ -56,7 +117,10 @@ function defining_variable(input){
 
 }
 function define_parser(input){
+  // console.log('inside teh define parser',input);
+  
   if (!input.startsWith('define')) return null
+  console.log('inside teh define parser',input);
   input = skipSpace(input.slice(7))
   let identity,value
   if (!(identity = defining_variable(input))) return null
@@ -67,6 +131,11 @@ function define_parser(input){
   if(!input.startsWith(')')) return null
   input = skipSpace(input.slice(1))
   return ['',input]
+
+}
+//  toevaluate the function req --- 1) default parameters 2) it should again go back and formthe loop
+function evaluate_lambda_function(operator,input){
+  l
 
 }
 
@@ -83,7 +152,12 @@ function operation_parser(input){
       
       return [globalConsts[op],skipSpace(input.slice(op.length))]      
     }
+
     if(!globalEnv[op]) return null 
+    if (typeof globalEnv[op] ==='object'){
+      input = skipSpace(input.slice(op.length))
+      return evaluate_lambda_function(op,input)
+    }
      
     input  = skipSpace(input.slice(op.length))
     while(input[0] != ')'){
@@ -124,7 +198,7 @@ function begin_parser(input){
     console.log(i++);
     
     result = evaluate(skipSpace(input))
-    console.log('in beegin praser',result);
+    // console.log('in beegin praser',result);
     // console.log(re);
     
     input = skipSpace(result[1])
@@ -138,7 +212,7 @@ function specialform_parser(input){
   let result
   if(!input.startsWith('(')) return null
   input = skipSpace(input.slice(1))
-  result = define_parser(input) || quote_parser(input)
+  result = define_parser(input) || lambda_parser(input) || quote_parser(input) 
   if (!result) return null
   return result
 }
@@ -147,7 +221,7 @@ function expression_parser(input){
   // comprises of operations // ifparser // beginparser
   if (!input.startsWith('(')) return null
   input = skipSpace(input.slice(1))
-  let result = operation_parser(input) ||if_parser(input) || begin_parser(input)
+  let result = operation_parser(input) ||if_parser(input) || begin_parser(input) || defining_variable(input)
   return result ? result : null
   // return null
 }
@@ -160,10 +234,12 @@ function evaluate(input){
 }
 
 // let finalresult = evaluate('(* 10 if 11 ( + 1 2 )   pi )')
-let finalresult = evaluate('(quote (one two)))')
+let finalresult = evaluate('(define circle_area ( lambda (r) (* pi r r)))')
 // if(finalresult) console.log(finalresult[0]);
  console.log('final result is ',finalresult);
-//  console.log(globalEnv);
+ console.log(globalEnv);
+ console.log(evaluate('(circle_area 3 )'));
+ 
  
 // (evaluate('45'))
 // console.log('finalreafafaadfadsfa',evaluate('(+ 1 1 (* 2 4 )) (+ 3 3))'));
