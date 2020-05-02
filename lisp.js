@@ -13,7 +13,7 @@ let globalEnv = {
 }
 let globalConsts = {
   'pi': Math.PI,
-  'e':Math.e,
+  
 }
 function numberparser(data){
   let result = /[-]?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?/.exec(data);
@@ -47,40 +47,39 @@ function quote_parser(input){
 }
 
 function lambda_parser(input){
-  console.log('coming inside lambda_praser',input);
-  
-  let parameter
-  let  args = {}
-  let local_environment = {}
-  if (input.startsWith('lambda ')) return null
+  if (!input.startsWith('lambda ')) return null
   input = skipSpace(input.slice(7))
-  console.log('input.slice(7',input);
-  
+  let args = {}
+  let local = {}
+  let parameters
   input = skipSpace(input.slice(1))
   while(!input.startsWith(')')){
-    parameter = defining_variable(input)
-    if (!parameter) return null
-    args[parameter[0]] = null
-    input = skipSpace(parameter[1])
-    console.log('paranater',parameter);
+    parameters = defining_variable(input)
+    if (!parameters) return null
+    // console.log('inside the lamba_parser',parameters);
+    globalConsts[parameters[0]] = null
+     console.log('inside the lamba_parser',globalConsts);
     
+    
+    args[parameters[0]] = null
+    input = skipSpace(parameters[1])
   }
-  console.log('input');
-  // need to create a structure that holds the symbol and store it in thelocal environent
-  local_environment.args = args
-  //create a function to validate the left part of the inpt that should verify as a function
+  input = input.slice(1)
+  local.args = args
+
   let result = validate_fun(input)
   if (!result) return null
-  local_environment.func = result[0]
+  local.def = result[0]
   input = skipSpace(result[1])
-  if (!input.startsWith(')'))  return null
-  console.log(env);
-  console.log('local_env',local_environment);
-  
-  
-  return [local_environment,input.slice(1)]
-
+  if(!input.startsWith(')')) return null
+  return [local,input.slice(1)]
+ 
 }
+
+
+
+
+
 
 function validate_fun(input){
   let result 
@@ -107,9 +106,6 @@ function validate_fun(input){
 
 }
 
-
-
-
 function defining_variable(input){
   let result = input.match(/^[a-zA-Z]\w*/)
   if(result == null) return null
@@ -125,17 +121,43 @@ function define_parser(input){
   let identity,value
   if (!(identity = defining_variable(input))) return null
   input = identity[1]
-  if(!(value= evaluate(input))) return null
+  if(!(value= evaluate(input))) return null // can be number or lambda function
   globalEnv[identity[0]] = value[0]
+  console.log('global enviromnet in define function',globalEnv);
+  
   input = skipSpace(value[1])
   if(!input.startsWith(')')) return null
+
   input = skipSpace(input.slice(1))
   return ['',input]
 
 }
 //  toevaluate the function req --- 1) default parameters 2) it should again go back and formthe loop
 function evaluate_lambda_function(operator,input){
-  l
+  // console.log('operator',operator, input);
+  let value , i=0
+  let key_of_args = Object.keys(globalEnv[operator]['args'])
+  // let x = []
+
+
+  while(!input.startsWith(')'))
+  {
+    value = evaluate(input)
+    console.log('environment in the evaluate function',globalEnv);
+    
+    console.log('value in evaluation function',value);
+    globalEnv[operator]['args'] [key_of_args[i]] = value[0]
+    globalConsts[[key_of_args[i]]] = value[0]
+     i += 1 
+    input = skipSpace(value[1])
+  }
+  console.log('environment in the evaluate function 4',globalConsts);
+  result = evaluate(globalEnv[operator]['def'])
+  console.log('result in evaluate laambda',result);
+  
+
+  
+  
 
 }
 
@@ -156,6 +178,8 @@ function operation_parser(input){
     if(!globalEnv[op]) return null 
     if (typeof globalEnv[op] ==='object'){
       input = skipSpace(input.slice(op.length))
+      console.log('op',op);
+      
       return evaluate_lambda_function(op,input)
     }
      
@@ -233,13 +257,17 @@ function evaluate(input){
   return result
 }
 
-// let finalresult = evaluate('(* 10 if 11 ( + 1 2 )   pi )')
-let finalresult = evaluate('(define circle_area ( lambda (r) (* pi r r)))')
-// if(finalresult) console.log(finalresult[0]);
- console.log('final result is ',finalresult);
- console.log(globalEnv);
- console.log(evaluate('(circle_area 3 )'));
+// // let finalresult = evaluate('(* 10 if 11 ( + 1 2 )   pi )')
+// let finalresult = evaluate('(define circle_area ( lambda (r) (* pi r r)))')
+// // if(finalresult) console.log(finalresult[0]);
+//  console.log('final result is ',finalresult);
+//  console.log(globalEnv.circle_area);
+// //  console.log(evaluate('(circle_area 3 )'));
  
  
 // (evaluate('45'))
 // console.log('finalreafafaadfadsfa',evaluate('(+ 1 1 (* 2 4 )) (+ 3 3))'));
+console.log(evaluate('(define circle_area ( lambda (r) (* pi r r)))'))
+console.log(evaluate('(circle_area 3 )'));
+
+// console.log(globalEnv);
